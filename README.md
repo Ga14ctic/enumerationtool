@@ -1,4 +1,4 @@
-# VULNERABILITY SCANNER
+# EnumerationTool
 
 EnumerationTool is an advanced penetration testing tool designed for comprehensive host enumeration. It leverages various techniques, including nmap scanning, vulnerability detection, and the retrieval of relevant CVE codes.
 
