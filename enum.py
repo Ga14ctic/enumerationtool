@@ -14,7 +14,7 @@ def nmap_scan(target):
 def fetch_cve_info(vulnerability):
     try:
         # Replace this URL with the relevant CVE database API or source
-        cve_url = f"https://cveapi.example.com/{vulnerability}"
+        cve_url = f"https://cveapi.com/{vulnerability}.json"
         response = requests.get(cve_url)
         
         if response.status_code == 200:
