@@ -11,7 +11,7 @@ EnumerationTool is an advanced penetration testing tool designed for comprehensi
 ## Usage
 
 ```bash
-python enum_tool.py (target)
+python enum_tool.py -t (target)
 ```
 
 ## Flags
