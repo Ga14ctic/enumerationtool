@@ -1,76 +1,66 @@
 import argparse
 import subprocess
-import requests
-from bs4 import BeautifulSoup
+import shlex
+import re
 
 def nmap_scan(target):
     try:
-        result = subprocess.run(['nmap', '-A', target], capture_output=True, text=True)
+        result = subprocess.run(['nmap', '-sV', '--script', 'vulners', target], capture_output=True, text=True)
         return result.stdout
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error during nmap scan: {e}")
         return None
 
-def fetch_cve_info(vulnerability):
+def searchsploit_cve(cve):
     try:
-        # Replace this URL with the relevant CVE database API or source
-        cve_url = f"https://cveapi.com/{vulnerability}.json"
-        response = requests.get(cve_url)
-        
-        if response.status_code == 200:
-            cve_data = response.json()
-            return cve_data
-        else:
-            return None
+        result = subprocess.run(['searchsploit', cve], capture_output=True, text=True)
+        return result.stdout
     except Exception as e:
-        print(f"Error fetching CVE information: {e}")
+        print(f"Error during searchsploit lookup: {e}")
         return None
 
-def enumerate(target):
-    print(f"[*] Performing in-depth enumeration on {target}...\n")
-    
-    # Nmap Scan
-    print("[+] Running Nmap scan...\n")
-    nmap_result = nmap_scan(target)
-    if nmap_result:
-        print(nmap_result)
-
-        # Parse Nmap results to find potential vulnerabilities
-        potential_vulnerabilities = parse_nmap_results(nmap_result)
-        
-        if potential_vulnerabilities:
-            print("\n[+] Potential Vulnerabilities:")
-            for vuln in potential_vulnerabilities:
-                print(f"  - {vuln}")
-
-                # Fetch CVE information for each potential vulnerability
-                cve_info = fetch_cve_info(vuln)
-                if cve_info:
-                    print(f"    CVE: {cve_info['CVE']}")
-                    print(f"    Description: {cve_info['Description']}")
-                    print(f"    CVSS Score: {cve_info['CVSS Score']}")
-                    print(f"    References: {', '.join(cve_info['References'])}\n")
-                else:
-                    print("    No relevant CVE code found.\n")
-        else:
-            print("\n[-] No potential vulnerabilities found.")
-
-def parse_nmap_results(nmap_output):
-    # Implement your own logic to parse Nmap results and extract potential vulnerabilities
-    # This is a simplified example, and you may need to adjust it based on the specific output format
-    potential_vulnerabilities = ["Open Port 21: FTP Server Vulnerable to Exploits",
-                                 "Open Port 22: SSH Version Vulnerable",
-                                 "Open Port 80: Web Server Vulnerable to XXE"]
-    return potential_vulnerabilities
+def extract_cve(output):
+    # Extract CVE codes from the nmap scan output
+    cve_pattern = re.compile(r'(CVE-\d{4}-\d{4,7})')
+    cve_matches = cve_pattern.findall(output)
+    return cve_matches
 
 def main():
-    parser = argparse.ArgumentParser(description="Penetration Testing Enumeration Tool")
-    parser.add_argument('target', help='Target IP address or domain name')
-    
+    parser = argparse.ArgumentParser(description="Enumeration Tool for Penetration Testing")
+    parser.add_argument('-t', '--target', help='Target IP or domain', required=True)
     args = parser.parse_args()
+
     target = args.target
 
-    enumerate(target)
+    print(f"Scanning target: {target}")
+
+    # Perform nmap scan to identify potential vulnerabilities
+    nmap_output = nmap_scan(target)
+
+    if nmap_output:
+        print("Nmap Scan Results:")
+        print(nmap_output)
+
+        # Extract CVE codes from nmap scan output
+        cve_codes = extract_cve(nmap_output)
+
+        if cve_codes:
+            print("\nPotential Vulnerabilities:")
+            for cve_code in cve_codes:
+                print(f" - {cve_code}")
+
+                # Search for the CVE code using searchsploit
+                searchsploit_result = searchsploit_cve(cve_code)
+
+                if searchsploit_result:
+                    print("   Searchsploit Results:")
+                    print(searchsploit_result)
+                else:
+                    print("   No relevant CVE code found in searchsploit.")
+        else:
+            print("No potential vulnerabilities found.")
+    else:
+        print("Error: Nmap scan failed.")
 
 if __name__ == "__main__":
     main()
